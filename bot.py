@@ -25,7 +25,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Foydalanuvchi /start bosganda"""
     context.user_data["images"] = []
     await update.message.reply_text(
-        "👋 Salom!\n\n"
+        "👋 Assalomu alaykum!\n\n"
         "📸 Menga bir yoki bir nechta rasm yuboring.\n"
         "✅ Tugatgach /done deb yozing — men ularni bitta PDF qilib beraman.\n"
         "🗑 Boshidan boshlash uchun /reset yozing."
