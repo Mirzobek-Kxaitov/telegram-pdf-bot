@@ -17,7 +17,7 @@ from config import (
     NETWORK_WRITE_TIMEOUT,
     TELEGRAM_TOKEN,
 )
-from handlers import done, image_to_pdf, pdf_router, start
+from handlers import docx_to_pdf, done, image_to_pdf, pdf_router, start
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -52,6 +52,10 @@ def main():
     app.add_handler(MessageHandler(filters.PHOTO, image_to_pdf.handle_photo))
     app.add_handler(MessageHandler(filters.Document.IMAGE, image_to_pdf.handle_image_document))
     app.add_handler(MessageHandler(filters.Document.PDF, pdf_router.handle_pdf_document))
+    app.add_handler(MessageHandler(
+        filters.Document.FileExtension("docx"),
+        docx_to_pdf.handle_docx_document,
+    ))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, pdf_router.handle_text))
 
     app.add_handler(CallbackQueryHandler(start.language_callback, pattern=r"^lang:"))

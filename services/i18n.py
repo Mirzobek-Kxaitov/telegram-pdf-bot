@@ -22,7 +22,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "  • Sahifalarga bo'lish\n"
             "  • Birlashtirish (merge)\n"
             "  • Siqish (compress)\n"
-            "  • Parol qo'yish / olib tashlash\n\n"
+            "  • Parol qo'yish / olib tashlash\n"
+            "📝 *Word → PDF* — .docx fayl yuboring, avtomatik PDF qiladi.\n\n"
             "ℹ️ Yordam: /help\n"
             "🌐 Til: /language"
         ),
@@ -38,6 +39,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "  ➕ Birlashtirish (boshqa PDF qo'shing va /done bosing)\n"
             "  📉 Siqish (Telegram limitiga moslashtirish)\n"
             "  🔐 Parol qo'yish / olib tashlash\n\n"
+            "📝 *Word → PDF:*\n"
+            ".docx fayl yuboring — avtomatik PDF qiladi.\n"
+            "_Eslatma: kompleks formatlash yo'qolishi mumkin._\n\n"
             "🎯 *Komandalar:*\n"
             "/start — qayta boshlash\n"
             "/done — joriy amalni yakunlash\n"
@@ -188,6 +192,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         # === done.py ===
         "done_nothing": "⚠️ Hech narsa yo'q.\nAvval rasm yoki PDF yuboring.",
+
+        # === docx_to_pdf.py ===
+        "docx_too_large": "❌ DOCX juda katta. Maksimal {mb}MB.",
+        "docx_converting": "🔄 DOCX → PDF konvertatsiya qilinmoqda...",
+        "docx_download_error": "❌ DOCX faylni yuklab bo'lmadi.",
+        "docx_convert_error": "❌ Konvertatsiyada xato. Hujjat juda murakkab bo'lishi mumkin yoki .docx formatida emas.",
+        "docx_done": "✅ Tayyor!\n\n⚠️ Eslatma: kompleks formatlash (rasm, jadval, maxsus shrift) yo'qolishi mumkin.",
     },
 
     "ru": {
@@ -201,7 +212,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "  • Разделить на страницы\n"
             "  • Объединить (merge)\n"
             "  • Сжать (compress)\n"
-            "  • Установить / снять пароль\n\n"
+            "  • Установить / снять пароль\n"
+            "📝 *Word → PDF* — отправьте .docx, автоматически сделаю PDF.\n\n"
             "ℹ️ Помощь: /help\n"
             "🌐 Язык: /language"
         ),
@@ -217,6 +229,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "  ➕ Объединить (добавьте PDF и нажмите /done)\n"
             "  📉 Сжать (под лимит Telegram)\n"
             "  🔐 Установить / снять пароль\n\n"
+            "📝 *Word → PDF:*\n"
+            "Отправьте .docx — автоматически сконвертирую в PDF.\n"
+            "_Примечание: сложное форматирование может быть потеряно._\n\n"
             "🎯 *Команды:*\n"
             "/start — начать заново\n"
             "/done — завершить текущее действие\n"
@@ -365,6 +380,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         # === done.py ===
         "done_nothing": "⚠️ Ничего нет.\nСначала отправьте изображение или PDF.",
+
+        # === docx_to_pdf.py ===
+        "docx_too_large": "❌ DOCX слишком большой. Максимум {mb}МБ.",
+        "docx_converting": "🔄 Конвертирую DOCX → PDF...",
+        "docx_download_error": "❌ Не удалось загрузить DOCX.",
+        "docx_convert_error": "❌ Ошибка конвертации. Документ слишком сложный или не в формате .docx.",
+        "docx_done": "✅ Готово!\n\n⚠️ Внимание: сложное форматирование (изображения, таблицы, нестандартные шрифты) может быть потеряно.",
     },
 
     "en": {
@@ -378,7 +400,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "  • Split into pages\n"
             "  • Merge multiple PDFs\n"
             "  • Compress\n"
-            "  • Set / remove password\n\n"
+            "  • Set / remove password\n"
+            "📝 *Word → PDF* — send a .docx, auto-converts to PDF.\n\n"
             "ℹ️ Help: /help\n"
             "🌐 Language: /language"
         ),
@@ -394,6 +417,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "  ➕ Merge (add more PDFs and press /done)\n"
             "  📉 Compress (fit Telegram limit)\n"
             "  🔐 Set / remove password\n\n"
+            "📝 *Word → PDF:*\n"
+            "Send a .docx — auto-converts to PDF.\n"
+            "_Note: complex formatting may be lost._\n\n"
             "🎯 *Commands:*\n"
             "/start — restart\n"
             "/done — finish current action\n"
@@ -542,6 +568,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         # === done.py ===
         "done_nothing": "⚠️ Nothing here.\nSend an image or PDF first.",
+
+        # === docx_to_pdf.py ===
+        "docx_too_large": "❌ DOCX is too large. Maximum {mb}MB.",
+        "docx_converting": "🔄 Converting DOCX → PDF...",
+        "docx_download_error": "❌ Failed to download DOCX.",
+        "docx_convert_error": "❌ Conversion failed. The document may be too complex or not in .docx format.",
+        "docx_done": "✅ Done!\n\n⚠️ Note: complex formatting (images, tables, special fonts) may be lost.",
     },
 }
 
