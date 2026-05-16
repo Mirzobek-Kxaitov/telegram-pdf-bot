@@ -58,4 +58,4 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if code not in SUPPORTED_LANGS:
         return
     context.user_data["lang"] = code
-    await query.edit_message_text(t("language_set", code, lang=LANG_NAMES[code]))
+    await query.edit_message_text(t("language_set", code, name=LANG_NAMES[code]))
