@@ -59,3 +59,4 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     context.user_data["lang"] = code
     await query.edit_message_text(t("language_set", code, name=LANG_NAMES[code]))
+    await query.message.chat.send_message(t("welcome", code), parse_mode="Markdown")
