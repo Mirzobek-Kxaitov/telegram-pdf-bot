@@ -9,7 +9,14 @@ from telegram.ext import (
     filters,
 )
 
-from config import TELEGRAM_TOKEN
+from config import (
+    GET_UPDATES_TIMEOUT,
+    NETWORK_CONNECT_TIMEOUT,
+    NETWORK_POOL_TIMEOUT,
+    NETWORK_READ_TIMEOUT,
+    NETWORK_WRITE_TIMEOUT,
+    TELEGRAM_TOKEN,
+)
 from handlers import done, image_to_pdf, pdf_router, start
 
 logging.basicConfig(
@@ -23,7 +30,16 @@ def main():
     if not TELEGRAM_TOKEN:
         raise ValueError("TELEGRAM_TOKEN o'rnatilmagan!")
 
-    app = Application.builder().token(TELEGRAM_TOKEN).build()
+    app = (
+        Application.builder()
+        .token(TELEGRAM_TOKEN)
+        .read_timeout(NETWORK_READ_TIMEOUT)
+        .write_timeout(NETWORK_WRITE_TIMEOUT)
+        .connect_timeout(NETWORK_CONNECT_TIMEOUT)
+        .pool_timeout(NETWORK_POOL_TIMEOUT)
+        .get_updates_read_timeout(GET_UPDATES_TIMEOUT)
+        .build()
+    )
 
     app.add_handler(CommandHandler("start", start.start))
     app.add_handler(CommandHandler("help", start.help_command))

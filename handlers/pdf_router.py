@@ -4,10 +4,15 @@ from io import BytesIO
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
-from config import MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB
+from config import (
+    MAX_FILE_SIZE_BYTES,
+    MAX_FILE_SIZE_MB,
+    MAX_TOTAL_USER_BYTES,
+    MAX_TOTAL_USER_MB,
+)
 from services import pdf_tools
 
-from . import pdf_merge, pdf_split, pdf_to_image
+from . import pdf_merge, pdf_split, pdf_to_image, total_user_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +46,22 @@ async def handle_pdf_document(update: Update, context: ContextTypes.DEFAULT_TYPE
         buf = BytesIO()
         await file.download_to_memory(buf)
         pdf_bytes = buf.getvalue()
-        page_count = pdf_tools.get_pdf_page_count(pdf_bytes)
     except Exception:
         logger.exception("PDF yuklab olishda xato")
+        await update.message.reply_text("❌ PDF faylni yuklab bo'lmadi.")
+        return
+
+    if total_user_bytes(context.user_data) + len(pdf_bytes) > MAX_TOTAL_USER_BYTES:
+        await update.message.reply_text(
+            f"⚠️ Jami {MAX_TOTAL_USER_MB}MB limit oshib ketadi. "
+            f"/cancel bosing va qaytadan boshlang."
+        )
+        return
+
+    try:
+        page_count = pdf_tools.get_pdf_page_count(pdf_bytes)
+    except Exception:
+        logger.exception("PDF o'qishda xato")
         await update.message.reply_text(
             "❌ PDF faylni o'qib bo'lmadi. Fayl buzilgan bo'lishi mumkin."
         )

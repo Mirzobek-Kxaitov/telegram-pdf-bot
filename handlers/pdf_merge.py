@@ -4,8 +4,16 @@ from io import BytesIO
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB, MAX_PDFS_IN_MERGE
+from config import (
+    MAX_FILE_SIZE_BYTES,
+    MAX_FILE_SIZE_MB,
+    MAX_PDFS_IN_MERGE,
+    MAX_TOTAL_USER_BYTES,
+    MAX_TOTAL_USER_MB,
+)
 from services import pdf_tools
+
+from . import total_user_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +59,22 @@ async def add_pdf_to_merge(update: Update, context: ContextTypes.DEFAULT_TYPE):
         buf = BytesIO()
         await file.download_to_memory(buf)
         pdf_bytes = buf.getvalue()
-        pdf_tools.get_pdf_page_count(pdf_bytes)
     except Exception:
         logger.exception("Merge uchun PDF yuklab olishda xato")
-        await update.message.reply_text("❌ PDF'ni qabul qilib bo'lmadi.")
+        await update.message.reply_text("❌ PDF'ni yuklab bo'lmadi.")
+        return
+
+    if total_user_bytes(context.user_data) + len(pdf_bytes) > MAX_TOTAL_USER_BYTES:
+        await update.message.reply_text(
+            f"⚠️ Jami {MAX_TOTAL_USER_MB}MB limit oshib ketadi. /done bosing yoki /cancel."
+        )
+        return
+
+    try:
+        pdf_tools.get_pdf_page_count(pdf_bytes)
+    except Exception:
+        logger.exception("Merge uchun PDF o'qishda xato")
+        await update.message.reply_text("❌ PDF buzilgan ko'rinadi.")
         return
 
     merge_list.append(pdf_bytes)

@@ -1,11 +1,19 @@
 import logging
 from io import BytesIO
 
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB, MAX_IMAGES_PER_USER
+from config import (
+    MAX_FILE_SIZE_BYTES,
+    MAX_FILE_SIZE_MB,
+    MAX_IMAGES_PER_USER,
+    MAX_TOTAL_USER_BYTES,
+    MAX_TOTAL_USER_MB,
+)
+
+from . import total_user_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +35,22 @@ async def _store_image(update: Update, context: ContextTypes.DEFAULT_TYPE, file,
 
     buf = BytesIO()
     await file.download_to_memory(buf)
-    buf.seek(0)
-    image = Image.open(buf).convert("RGB")
-    images.append(image)
+    data = buf.getvalue()
+
+    if total_user_bytes(context.user_data) + len(data) > MAX_TOTAL_USER_BYTES:
+        await update.message.reply_text(
+            f"⚠️ Jami {MAX_TOTAL_USER_MB}MB limit oshib ketadi. "
+            f"/done bosing yoki /cancel bilan bekor qiling."
+        )
+        return
+
+    try:
+        Image.open(BytesIO(data)).verify()
+    except (UnidentifiedImageError, Exception):
+        await update.message.reply_text("❌ Bu rasm formati qo'llab-quvvatlanmaydi.")
+        return
+
+    images.append(data)
 
     count = len(images)
     await update.message.reply_text(
@@ -62,10 +83,17 @@ async def handle_image_document(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text("❌ Faylni qabul qilib bo'lmadi.")
 
 
+def _open_rgb(image_bytes: bytes) -> Image.Image:
+    img = Image.open(BytesIO(image_bytes))
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+    return img
+
+
 async def images_to_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Called by /done when user is in image-collection mode."""
-    images = context.user_data.get("images", [])
-    if not images:
+    image_bytes_list = context.user_data.get("images", [])
+    if not image_bytes_list:
         await update.message.reply_text(
             "⚠️ Hech qanday rasm yuborilmagan.\n"
             "Avval rasm yuboring, keyin /done bosing."
@@ -73,24 +101,26 @@ async def images_to_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     notice = await update.message.reply_text(
-        f"🔄 {len(images)} ta rasm PDF'ga aylantirilmoqda..."
+        f"🔄 {len(image_bytes_list)} ta rasm PDF'ga aylantirilmoqda..."
     )
 
+    pdf_buffer = BytesIO()
+    pil_images: list[Image.Image] = []
     try:
-        pdf_buffer = BytesIO()
-        first_image, *other_images = images
-        first_image.save(
+        pil_images = [_open_rgb(b) for b in image_bytes_list]
+        first, *rest = pil_images
+        first.save(
             pdf_buffer,
             format="PDF",
             save_all=True,
-            append_images=other_images,
+            append_images=rest,
         )
         pdf_buffer.seek(0)
 
         await update.message.reply_document(
             document=pdf_buffer,
             filename="converted.pdf",
-            caption=f"✅ Tayyor! {len(images)} ta rasm bitta PDF qilindi.",
+            caption=f"✅ Tayyor! {len(image_bytes_list)} ta rasm bitta PDF qilindi.",
         )
     except Exception:
         logger.exception("PDF yasashda xato")
@@ -98,6 +128,11 @@ async def images_to_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "❌ PDF yasashda xato yuz berdi. Iltimos, qayta urinib ko'ring."
         )
     finally:
+        for img in pil_images:
+            try:
+                img.close()
+            except Exception:
+                pass
         try:
             await notice.delete()
         except Exception:
