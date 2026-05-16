@@ -8,7 +8,7 @@ from config import PAGES_AS_IMAGES_LIMIT
 from services import pdf_tools
 from services.i18n import t
 
-from . import get_lang
+from . import get_lang, send_done_footer
 
 logger = logging.getLogger(__name__)
 
@@ -59,3 +59,4 @@ async def convert(query, context: ContextTypes.DEFAULT_TYPE):
         context.user_data.pop("pending_pdf", None)
         context.user_data.pop("pending_pdf_pages", None)
         context.user_data["mode"] = None
+        await send_done_footer(query.message.chat, lang)

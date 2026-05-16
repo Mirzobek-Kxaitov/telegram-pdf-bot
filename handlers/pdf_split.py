@@ -7,7 +7,7 @@ from telegram.ext import ContextTypes
 from services import pdf_tools
 from services.i18n import t
 
-from . import get_lang
+from . import get_lang, send_done_footer
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +65,7 @@ async def do_each_page(query, context: ContextTypes.DEFAULT_TYPE):
         context.user_data.pop("pending_pdf", None)
         context.user_data.pop("pending_pdf_pages", None)
         context.user_data["mode"] = None
+        await send_done_footer(query.message.chat, lang)
 
 
 async def prompt_range(query, context: ContextTypes.DEFAULT_TYPE):
@@ -129,6 +130,7 @@ async def handle_range_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data.pop("pending_pdf", None)
         context.user_data.pop("pending_pdf_pages", None)
         context.user_data["mode"] = None
+        await send_done_footer(update.effective_chat, lang)
 
 
 def _format_range_label(indices: list[int]) -> str:

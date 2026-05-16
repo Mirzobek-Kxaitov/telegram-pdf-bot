@@ -7,7 +7,7 @@ from telegram.ext import ContextTypes
 from services import pdf_tools
 from services.i18n import t
 
-from . import get_lang
+from . import get_lang, send_done_footer
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +87,7 @@ async def handle_password_text(update: Update, context: ContextTypes.DEFAULT_TYP
             except Exception:
                 pass
             _clear_pending(context)
+            await send_done_footer(chat, lang)
         return
 
     if mode == "awaiting_password_remove":
@@ -125,3 +126,4 @@ async def handle_password_text(update: Update, context: ContextTypes.DEFAULT_TYP
             except Exception:
                 pass
             _clear_pending(context)
+            await send_done_footer(chat, lang)

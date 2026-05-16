@@ -51,6 +51,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "cancel_nothing": "ℹ️ Hech narsa yo'q edi. Rasm yoki PDF yuboring.",
         "language_prompt": "🌐 Tilni tanlang:",
         "language_set": "✅ Til o'zgartirildi: {name}",
+        "footer_done_hint": "💡 Yana fayl yuboring yoki tugmadan tanlang.",
+        "btn_help": "❓ Yordam",
+        "btn_language": "🌐 Til",
 
         # === image_to_pdf.py ===
         "image_too_large": "❌ Rasm juda katta. Maksimal {mb}MB.",
@@ -227,6 +230,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "cancel_nothing": "ℹ️ Ничего не было. Отправьте изображение или PDF.",
         "language_prompt": "🌐 Выберите язык:",
         "language_set": "✅ Язык изменён: {name}",
+        "footer_done_hint": "💡 Отправьте ещё файл или выберите кнопку.",
+        "btn_help": "❓ Помощь",
+        "btn_language": "🌐 Язык",
 
         # === image_to_pdf.py ===
         "image_too_large": "❌ Изображение слишком большое. Максимум {mb}МБ.",
@@ -401,6 +407,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "cancel_nothing": "ℹ️ Nothing to clear. Send an image or PDF.",
         "language_prompt": "🌐 Choose language:",
         "language_set": "✅ Language changed to: {name}",
+        "footer_done_hint": "💡 Send another file or pick a button.",
+        "btn_help": "❓ Help",
+        "btn_language": "🌐 Language",
 
         # === image_to_pdf.py ===
         "image_too_large": "❌ Image is too large. Maximum {mb}MB.",

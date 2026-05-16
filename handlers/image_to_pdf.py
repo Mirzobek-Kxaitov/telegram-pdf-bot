@@ -14,7 +14,7 @@ from config import (
 )
 from services.i18n import t
 
-from . import get_lang, total_user_bytes
+from . import get_lang, send_done_footer, total_user_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -174,3 +174,4 @@ async def images_to_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             pass
         context.user_data["images"] = []
+        await send_done_footer(update.effective_chat, lang)

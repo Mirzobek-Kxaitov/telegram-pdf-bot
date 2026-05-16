@@ -16,6 +16,7 @@ from services.i18n import t
 from . import (
     get_lang,
     image_to_pdf,
+    language_keyboard,
     pdf_compress,
     pdf_merge,
     pdf_password,
@@ -146,6 +147,13 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await pdf_password.prompt_set_password(query, context)
     elif action == "password_remove":
         await pdf_password.prompt_remove_password(query, context)
+    elif action == "show_help":
+        await query.message.chat.send_message(t("help", lang), parse_mode="Markdown")
+    elif action == "show_language":
+        await query.message.chat.send_message(
+            t("language_prompt", lang),
+            reply_markup=language_keyboard(),
+        )
     else:
         await query.edit_message_text(t("unknown_action", lang))
 

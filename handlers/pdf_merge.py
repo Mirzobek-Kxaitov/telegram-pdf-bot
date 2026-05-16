@@ -14,7 +14,7 @@ from config import (
 from services import pdf_tools
 from services.i18n import t
 
-from . import get_lang, total_user_bytes
+from . import get_lang, send_done_footer, total_user_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -105,3 +105,4 @@ async def do_merge(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
         context.user_data["merge_pdfs"] = []
         context.user_data["mode"] = None
+        await send_done_footer(update.effective_chat, lang)

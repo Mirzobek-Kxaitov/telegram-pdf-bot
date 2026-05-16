@@ -1,7 +1,9 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import Update
 from telegram.ext import ContextTypes
 
 from services.i18n import LANG_NAMES, SUPPORTED_LANGS, detect_lang, t
+
+from . import language_keyboard
 
 
 def _lang(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
@@ -41,13 +43,9 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def language_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = _lang(update, context)
-    keyboard = [
-        [InlineKeyboardButton(LANG_NAMES[code], callback_data=f"lang:{code}")]
-        for code in SUPPORTED_LANGS
-    ]
     await update.message.reply_text(
         t("language_prompt", lang),
-        reply_markup=InlineKeyboardMarkup(keyboard),
+        reply_markup=language_keyboard(),
     )
 
 
