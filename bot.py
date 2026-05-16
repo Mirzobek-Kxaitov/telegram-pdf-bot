@@ -46,12 +46,15 @@ def main():
     app.add_handler(CommandHandler("cancel", start.cancel))
     app.add_handler(CommandHandler("reset", start.cancel))
     app.add_handler(CommandHandler("done", done.done))
+    app.add_handler(CommandHandler("reorder", image_to_pdf.reorder_command))
+    app.add_handler(CommandHandler("language", start.language_command))
 
     app.add_handler(MessageHandler(filters.PHOTO, image_to_pdf.handle_photo))
     app.add_handler(MessageHandler(filters.Document.IMAGE, image_to_pdf.handle_image_document))
     app.add_handler(MessageHandler(filters.Document.PDF, pdf_router.handle_pdf_document))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, pdf_router.handle_text))
 
+    app.add_handler(CallbackQueryHandler(start.language_callback, pattern=r"^lang:"))
     app.add_handler(CallbackQueryHandler(pdf_router.button_callback))
 
     logger.info("Bot ishga tushdi...")

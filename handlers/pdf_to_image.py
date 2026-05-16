@@ -6,6 +6,9 @@ from telegram.ext import ContextTypes
 
 from config import PAGES_AS_IMAGES_LIMIT
 from services import pdf_tools
+from services.i18n import t
+
+from . import get_lang
 
 logger = logging.getLogger(__name__)
 
@@ -13,25 +16,20 @@ MEDIA_GROUP_SIZE = 10
 
 
 async def convert(query, context: ContextTypes.DEFAULT_TYPE):
+    lang = get_lang(context, query.from_user)
     pdf_bytes = context.user_data.get("pending_pdf")
     if not pdf_bytes:
-        await query.edit_message_text(
-            "⚠️ PDF topilmadi. Iltimos, PDF'ni qaytadan yuboring."
-        )
+        await query.edit_message_text(t("pdf_not_found", lang))
         return
 
     page_count = context.user_data.get("pending_pdf_pages", 0)
-    await query.edit_message_text(
-        f"🔄 {page_count} ta sahifa rasmga aylantirilmoqda..."
-    )
+    await query.edit_message_text(t("converting_pages", lang, pages=page_count))
 
     try:
         images = pdf_tools.pdf_to_images(pdf_bytes)
     except Exception:
         logger.exception("PDF rasmga aylantirishda xato")
-        await query.edit_message_text(
-            "❌ PDF'ni rasmga aylantirib bo'lmadi."
-        )
+        await query.edit_message_text(t("pdf2img_error", lang))
         return
 
     chat_id = query.message.chat_id
@@ -42,25 +40,21 @@ async def convert(query, context: ContextTypes.DEFAULT_TYPE):
                 batch = images[i:i + MEDIA_GROUP_SIZE]
                 media = [InputMediaPhoto(BytesIO(b)) for b in batch]
                 await context.bot.send_media_group(chat_id=chat_id, media=media)
-            caption = f"✅ {len(images)} ta sahifa yuborildi."
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=t("images_sent", lang, count=len(images)),
+            )
         else:
             zip_bytes = pdf_tools.images_to_zip(images)
             await context.bot.send_document(
                 chat_id=chat_id,
                 document=BytesIO(zip_bytes),
                 filename="pages.zip",
-                caption=f"✅ {len(images)} ta sahifa rasm sifatida ZIP arxivda."
+                caption=t("images_as_zip", lang, count=len(images)),
             )
-            caption = None
-
-        if caption:
-            await context.bot.send_message(chat_id=chat_id, text=caption)
     except Exception:
         logger.exception("Rasmlarni yuborishda xato")
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text="❌ Rasmlarni yuborishda xato yuz berdi."
-        )
+        await context.bot.send_message(chat_id=chat_id, text=t("send_error", lang))
     finally:
         context.user_data.pop("pending_pdf", None)
         context.user_data.pop("pending_pdf_pages", None)

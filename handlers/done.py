@@ -1,7 +1,9 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from . import image_to_pdf, pdf_merge
+from services.i18n import t
+
+from . import get_lang, image_to_pdf, pdf_merge
 
 
 async def done(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -16,7 +18,5 @@ async def done(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await image_to_pdf.images_to_pdf(update, context)
         return
 
-    await update.message.reply_text(
-        "⚠️ Hech narsa yo'q.\n"
-        "Avval rasm yoki PDF yuboring."
-    )
+    lang = get_lang(context, update.effective_user)
+    await update.message.reply_text(t("done_nothing", lang))

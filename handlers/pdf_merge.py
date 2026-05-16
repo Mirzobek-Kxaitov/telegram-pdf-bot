@@ -12,16 +12,18 @@ from config import (
     MAX_TOTAL_USER_MB,
 )
 from services import pdf_tools
+from services.i18n import t
 
-from . import total_user_bytes
+from . import get_lang, total_user_bytes
 
 logger = logging.getLogger(__name__)
 
 
 async def start_merge(query, context: ContextTypes.DEFAULT_TYPE):
+    lang = get_lang(context, query.from_user)
     pdf_bytes = context.user_data.get("pending_pdf")
     if not pdf_bytes:
-        await query.edit_message_text("⚠️ PDF topilmadi. Qaytadan yuboring.")
+        await query.edit_message_text(t("pdf_not_found", lang))
         return
 
     merge_list = context.user_data.setdefault("merge_pdfs", [])
@@ -30,28 +32,20 @@ async def start_merge(query, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.pop("pending_pdf", None)
     context.user_data.pop("pending_pdf_pages", None)
 
-    await query.edit_message_text(
-        f"➕ Birlashtirish boshlandi. Hozir {len(merge_list)} ta PDF tayyor.\n\n"
-        f"Yana PDF yuboring va keyin /done bosing.\n"
-        f"Bekor qilish uchun /cancel."
-    )
+    await query.edit_message_text(t("merge_started", lang, count=len(merge_list)))
 
 
 async def add_pdf_to_merge(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Called when a PDF arrives while in merging mode."""
+    lang = get_lang(context, update.effective_user)
     document = update.message.document
 
     if document.file_size and document.file_size > MAX_FILE_SIZE_BYTES:
-        await update.message.reply_text(
-            f"❌ PDF juda katta. Maksimal {MAX_FILE_SIZE_MB}MB."
-        )
+        await update.message.reply_text(t("merge_pdf_too_large", lang, mb=MAX_FILE_SIZE_MB))
         return
 
     merge_list = context.user_data.setdefault("merge_pdfs", [])
     if len(merge_list) >= MAX_PDFS_IN_MERGE:
-        await update.message.reply_text(
-            f"⚠️ Maksimal {MAX_PDFS_IN_MERGE} ta PDF. /done bosing."
-        )
+        await update.message.reply_text(t("max_pdfs_reached", lang, max=MAX_PDFS_IN_MERGE))
         return
 
     try:
@@ -61,57 +55,49 @@ async def add_pdf_to_merge(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pdf_bytes = buf.getvalue()
     except Exception:
         logger.exception("Merge uchun PDF yuklab olishda xato")
-        await update.message.reply_text("❌ PDF'ni yuklab bo'lmadi.")
+        await update.message.reply_text(t("merge_download_error", lang))
         return
 
     if total_user_bytes(context.user_data) + len(pdf_bytes) > MAX_TOTAL_USER_BYTES:
-        await update.message.reply_text(
-            f"⚠️ Jami {MAX_TOTAL_USER_MB}MB limit oshib ketadi. /done bosing yoki /cancel."
-        )
+        await update.message.reply_text(t("merge_total_exceeded", lang, mb=MAX_TOTAL_USER_MB))
         return
 
     try:
         pdf_tools.get_pdf_page_count(pdf_bytes)
     except Exception:
         logger.exception("Merge uchun PDF o'qishda xato")
-        await update.message.reply_text("❌ PDF buzilgan ko'rinadi.")
+        await update.message.reply_text(t("broken_pdf", lang))
         return
 
     merge_list.append(pdf_bytes)
-    await update.message.reply_text(
-        f"✅ Qo'shildi ({len(merge_list)} ta). Yana yuboring yoki /done bosing."
-    )
+    await update.message.reply_text(t("pdf_added_to_merge", lang, count=len(merge_list)))
 
 
 async def do_merge(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Called by /done when in merging mode."""
+    lang = get_lang(context, update.effective_user)
     merge_list = context.user_data.get("merge_pdfs", [])
     if len(merge_list) < 2:
-        await update.message.reply_text(
-            f"⚠️ Birlashtirish uchun kamida 2 ta PDF kerak. Hozir {len(merge_list)} ta."
-        )
+        await update.message.reply_text(t("merge_need_two", lang, count=len(merge_list)))
         return
 
-    notice = await update.message.reply_text(
-        f"🔄 {len(merge_list)} ta PDF birlashtirilmoqda..."
-    )
+    notice = await update.message.reply_text(t("merging", lang, count=len(merge_list)))
 
     try:
         merged = pdf_tools.merge_pdfs(merge_list)
     except Exception:
         logger.exception("Merge xatosi")
-        await update.message.reply_text("❌ Birlashtirib bo'lmadi.")
+        await update.message.reply_text(t("merge_error", lang))
         return
 
     try:
         await update.message.reply_document(
             document=BytesIO(merged),
             filename="merged.pdf",
-            caption=f"✅ {len(merge_list)} ta PDF birlashtirildi.",
+            caption=t("merge_done", lang, count=len(merge_list)),
         )
     except Exception:
         logger.exception("Merge natijasini yuborishda xato")
-        await update.message.reply_text("❌ Faylni yuborib bo'lmadi (juda katta bo'lishi mumkin).")
+        await update.message.reply_text(t("merge_send_error", lang))
     finally:
         try:
             await notice.delete()

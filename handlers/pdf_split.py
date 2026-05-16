@@ -5,40 +5,45 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from services import pdf_tools
+from services.i18n import t
+
+from . import get_lang
 
 logger = logging.getLogger(__name__)
 
 
-def _split_menu_keyboard() -> InlineKeyboardMarkup:
+def _split_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("📄 Har sahifa alohida", callback_data="split_each")],
-        [InlineKeyboardButton("🎯 Diapazon kiritaman", callback_data="split_range")],
-        [InlineKeyboardButton("🔙 Orqaga", callback_data="split_back")],
+        [InlineKeyboardButton(t("btn_split_each", lang), callback_data="split_each")],
+        [InlineKeyboardButton(t("btn_split_range", lang), callback_data="split_range")],
+        [InlineKeyboardButton(t("btn_back", lang), callback_data="split_back")],
     ])
 
 
 async def show_options(query, context: ContextTypes.DEFAULT_TYPE):
+    lang = get_lang(context, query.from_user)
     pages = context.user_data.get("pending_pdf_pages", 0)
     await query.edit_message_text(
-        f"✂️ PDF ({pages} sahifa) qanday bo'linsin?",
-        reply_markup=_split_menu_keyboard(),
+        t("split_question", lang, pages=pages),
+        reply_markup=_split_menu_keyboard(lang),
     )
 
 
 async def do_each_page(query, context: ContextTypes.DEFAULT_TYPE):
+    lang = get_lang(context, query.from_user)
     pdf_bytes = context.user_data.get("pending_pdf")
     if not pdf_bytes:
-        await query.edit_message_text("⚠️ PDF topilmadi. Qaytadan yuboring.")
+        await query.edit_message_text(t("pdf_not_found", lang))
         return
 
     pages = context.user_data.get("pending_pdf_pages", 0)
-    await query.edit_message_text(f"🔄 {pages} ta sahifa ajratilmoqda...")
+    await query.edit_message_text(t("splitting_pages", lang, count=pages))
 
     try:
         parts = pdf_tools.split_pdf_each_page(pdf_bytes)
     except Exception:
         logger.exception("PDF har sahifaga bo'lishda xato")
-        await query.edit_message_text("❌ PDF'ni bo'lib bo'lmadi.")
+        await query.edit_message_text(t("split_error", lang))
         return
 
     chat_id = query.message.chat_id
@@ -51,11 +56,11 @@ async def do_each_page(query, context: ContextTypes.DEFAULT_TYPE):
             )
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"✅ {len(parts)} ta alohida PDF yuborildi."
+            text=t("split_each_done", lang, count=len(parts)),
         )
     except Exception:
         logger.exception("Sahifalarni yuborishda xato")
-        await context.bot.send_message(chat_id=chat_id, text="❌ Yuborishda xato.")
+        await context.bot.send_message(chat_id=chat_id, text=t("send_error", lang))
     finally:
         context.user_data.pop("pending_pdf", None)
         context.user_data.pop("pending_pdf_pages", None)
@@ -63,46 +68,41 @@ async def do_each_page(query, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def prompt_range(query, context: ContextTypes.DEFAULT_TYPE):
+    lang = get_lang(context, query.from_user)
     pages = context.user_data.get("pending_pdf_pages", 0)
     context.user_data["mode"] = "awaiting_split_range"
     await query.edit_message_text(
-        f"🎯 Diapazonni kiriting (PDF da {pages} ta sahifa):\n\n"
-        f"Misol:\n"
-        f"• `1-3` — 1-dan 3-gacha bitta PDF\n"
-        f"• `1-3, 5-7` — ikkita alohida PDF\n"
-        f"• `1, 3, 5` — uchta alohida sahifa\n\n"
-        f"Bekor qilish uchun /cancel",
+        t("range_prompt", lang, pages=pages),
         parse_mode="Markdown",
     )
 
 
 async def handle_range_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    lang = get_lang(context, update.effective_user)
     pdf_bytes = context.user_data.get("pending_pdf")
     pages = context.user_data.get("pending_pdf_pages", 0)
     range_str = update.message.text or ""
 
     if not pdf_bytes:
-        await update.message.reply_text("⚠️ PDF topilmadi. Qaytadan yuboring.")
+        await update.message.reply_text(t("pdf_not_found", lang))
         context.user_data["mode"] = None
         return
 
     try:
         groups = pdf_tools.parse_page_ranges(range_str, pages)
     except ValueError as e:
-        await update.message.reply_text(
-            f"❌ {e}\n\nQaytadan urinib ko'ring yoki /cancel bosing."
-        )
+        await update.message.reply_text(t("range_error", lang, error=str(e)))
         return
 
     notice = await update.message.reply_text(
-        f"🔄 {len(groups)} ta qism ajratilmoqda..."
+        t("splitting_range", lang, count=len(groups))
     )
 
     try:
         parts = pdf_tools.split_pdf_by_ranges(pdf_bytes, groups)
     except Exception:
         logger.exception("PDF diapazon bo'yicha bo'lishda xato")
-        await update.message.reply_text("❌ Bo'lishda xato yuz berdi.")
+        await update.message.reply_text(t("split_range_processing_error", lang))
         return
 
     chat_id = update.effective_chat.id
@@ -116,11 +116,11 @@ async def handle_range_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"✅ {len(parts)} ta PDF yuborildi."
+            text=t("split_range_done", lang, count=len(parts)),
         )
     except Exception:
         logger.exception("Bo'laklarni yuborishda xato")
-        await update.message.reply_text("❌ Yuborishda xato.")
+        await update.message.reply_text(t("split_range_send_error", lang))
     finally:
         try:
             await notice.delete()

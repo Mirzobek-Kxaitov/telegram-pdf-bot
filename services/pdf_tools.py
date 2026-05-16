@@ -90,6 +90,62 @@ def parse_page_ranges(range_str: str, max_pages: int) -> List[List[int]]:
     return groups
 
 
+def is_pdf_encrypted(pdf_bytes: bytes) -> bool:
+    reader = PdfReader(io.BytesIO(pdf_bytes))
+    return reader.is_encrypted
+
+
+def encrypt_pdf(pdf_bytes: bytes, password: str) -> bytes:
+    reader = PdfReader(io.BytesIO(pdf_bytes))
+    writer = PdfWriter()
+    for page in reader.pages:
+        writer.add_page(page)
+    writer.encrypt(password)
+    out = io.BytesIO()
+    writer.write(out)
+    writer.close()
+    return out.getvalue()
+
+
+def decrypt_pdf(pdf_bytes: bytes, password: str) -> bytes:
+    """Returns decrypted PDF bytes. Raises ValueError on wrong password."""
+    reader = PdfReader(io.BytesIO(pdf_bytes))
+    if not reader.is_encrypted:
+        return pdf_bytes
+    if reader.decrypt(password) == 0:
+        raise ValueError("Noto'g'ri parol")
+    writer = PdfWriter()
+    for page in reader.pages:
+        writer.add_page(page)
+    out = io.BytesIO()
+    writer.write(out)
+    writer.close()
+    return out.getvalue()
+
+
+def compress_pdf(pdf_bytes: bytes, dpi: int = 100, jpeg_quality: int = 70) -> bytes:
+    """Re-rasterize every page as JPEG to reduce file size.
+
+    Returns the compressed bytes. If the result is larger than the input
+    (already-optimized PDFs), returns the original bytes unchanged.
+    """
+    src = fitz.open(stream=pdf_bytes, filetype="pdf")
+    out = fitz.open()
+    try:
+        for page in src:
+            rect = page.rect
+            pix = page.get_pixmap(dpi=dpi)
+            img_bytes = pix.tobytes("jpeg", jpg_quality=jpeg_quality)
+            new_page = out.new_page(width=rect.width, height=rect.height)
+            new_page.insert_image(new_page.rect, stream=img_bytes)
+        result = out.tobytes(garbage=4, deflate=True, clean=True)
+    finally:
+        src.close()
+        out.close()
+
+    return result if len(result) < len(pdf_bytes) else pdf_bytes
+
+
 def split_pdf_by_ranges(pdf_bytes: bytes, groups: List[List[int]]) -> List[bytes]:
     reader = PdfReader(io.BytesIO(pdf_bytes))
     result = []

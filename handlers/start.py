@@ -1,61 +1,61 @@
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
-
-WELCOME_TEXT = (
-    "👋 Assalomu alaykum!\n\n"
-    "🤖 Men PDF bilan ishlovchi botman. Quyidagilarni qila olaman:\n\n"
-    "📸 *Rasm → PDF*\n"
-    "Rasmlarni yuboring va /done bosing.\n\n"
-    "📄 *PDF amallari*\n"
-    "PDF yuboring, tugmadan tanlang:\n"
-    "  • Rasmga aylantirish\n"
-    "  • Sahifalarga bo'lish\n"
-    "  • Birlashtirish (merge)\n\n"
-    "ℹ️ Batafsil: /help"
-)
+from services.i18n import LANG_NAMES, SUPPORTED_LANGS, detect_lang, t
 
 
-HELP_TEXT = (
-    "📖 *Yordam*\n\n"
-    "📸 *Rasmdan PDF yasash:*\n"
-    "1. Bir yoki bir nechta rasm yuboring\n"
-    "2. /done — barchasini bitta PDF qiladi\n\n"
-    "📄 *PDF bilan ishlash:*\n"
-    "PDF fayl yuborganingizda menyu chiqadi:\n"
-    "  • 📷 *Rasmga aylantirish* — har sahifani rasm qiladi\n"
-    "  • ✂️ *Sahifalarga bo'lish* — alohida fayllarga ajratadi\n"
-    "  • ➕ *Birlashtirish* — keyingi PDF'lar bilan qo'shadi\n\n"
-    "🎯 *Komandalar:*\n"
-    "/start — botni qayta ishga tushirish\n"
-    "/done — joriy amalni yakunlash\n"
-    "/cancel — bekor qilish va tozalash\n"
-    "/reset — /cancel ning sinonimi\n"
-    "/help — shu yordam matni\n\n"
-    "⚠️ *Cheklovlar:*\n"
-    "• Maksimal fayl o'lchami: 20MB\n"
-    "• Maksimal 50 ta rasm yoki 10 ta PDF"
-)
+def _lang(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    tg_lang = update.effective_user.language_code if update.effective_user else None
+    return detect_lang(context.user_data, tg_lang)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    saved_lang = context.user_data.get("lang")
     context.user_data.clear()
-    await update.message.reply_text(WELCOME_TEXT, parse_mode="Markdown")
+    if saved_lang:
+        context.user_data["lang"] = saved_lang
+    lang = _lang(update, context)
+    await update.message.reply_text(t("welcome", lang), parse_mode="Markdown")
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(HELP_TEXT, parse_mode="Markdown")
+    lang = _lang(update, context)
+    await update.message.reply_text(t("help", lang), parse_mode="Markdown")
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    lang = _lang(update, context)
     had_state = bool(
         context.user_data.get("images")
         or context.user_data.get("merge_pdfs")
         or context.user_data.get("pending_pdf")
         or context.user_data.get("mode")
     )
+    saved_lang = context.user_data.get("lang")
     context.user_data.clear()
-    if had_state:
-        await update.message.reply_text("🗑 Tozalandi. Yangidan boshlashingiz mumkin.")
-    else:
-        await update.message.reply_text("ℹ️ Hech narsa yo'q edi. Rasm yoki PDF yuboring.")
+    if saved_lang:
+        context.user_data["lang"] = saved_lang
+    msg = t("cancel_cleared", lang) if had_state else t("cancel_nothing", lang)
+    await update.message.reply_text(msg)
+
+
+async def language_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    lang = _lang(update, context)
+    keyboard = [
+        [InlineKeyboardButton(LANG_NAMES[code], callback_data=f"lang:{code}")]
+        for code in SUPPORTED_LANGS
+    ]
+    await update.message.reply_text(
+        t("language_prompt", lang),
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
+
+
+async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    code = query.data.split(":", 1)[1] if ":" in query.data else None
+    if code not in SUPPORTED_LANGS:
+        return
+    context.user_data["lang"] = code
+    await query.edit_message_text(t("language_set", code, lang=LANG_NAMES[code]))
